@@ -175,9 +175,37 @@ while 'flappy bird' != 'angry bird':
             # 否則用下一狀態的 Q 值加本期的環境回饋
             if terminal:
                 y_batch.append(r_batch[i])
-            else: 
+            else:
+                # readout_j1_batch[i] 儲存了 32 個 [不扇, 扇]
+                # np.max 會不分 dimesion 取最大數值
                 y_batch.append(r_batch[i] +  cfg._GAMMA * np.max(readout_j1_batch[i]))
-             
+                
 
+        # 開始梯度更新
+        y = Variable(torch.FloatTensor(y_batch))
+        a = Variable(torch.FloatTensor(a_batch))
+        s = Variable(torch.FloatTensor(np.array(s_j_batch, dtype-float)))
+        if use_cuda:
+        y = y.cuda()
+        a = a.cuda()
+        s = s.cuda()
 
+        # 計算 s_j_batch 的 Q 值
+        readout, h_fc1 = net(s)
+        # 被選擇的 action 會為 1，另一動作為 0，因此相乘後會留下被選擇的動作的 Q 值
+        readout_action = readout.mul(a).sum(1)
+        # readout_action 為依照舊有的 action 計算的預估 Q 值
+        # y 則為被 Q(s',a') 影響計算過的目標 Q 值
+        loss = criterion(readout_action, y)
+        loss.backward()
+        optimizer.step()
+        if t % 1000 == 0:
+            print('loss:', loss)
 
+    # 將狀態更新一次
+    s_t = s_t1
+    t += 1
+
+    # 每隔 10000 次循環，儲存網路
+    if t % 10000:
+        torch.save(net, 'saving_nets/' + GAME + '-dqn' + str(t), 'txt')
