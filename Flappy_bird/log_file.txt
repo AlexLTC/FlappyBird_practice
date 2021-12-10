@@ -1,0 +1,8 @@
+time_step:1000;	state:observe;	Epsilon:0.1;	Action:1;	Reward:0.1;	Q_MAX:7.801077e+04;	All_turn_scors:nan;
+time_step:2000;	state:observe;	Epsilon:0.1;	Action:1;	Reward:0.1;	Q_MAX:7.252081e+04;	All_turn_scors:nan;
+time_step:1000;	state:observe;	Epsilon:0.1;	Action:1;	Reward:0.1;	Q_MAX:7.008726e+04;	All_turn_scors:nan;
+time_step:2000;	state:observe;	Epsilon:0.1;	Action:1;	Reward:0.1;	Q_MAX:7.704414e+04;	All_turn_scors:nan;
+time_step:3000;	state:observe;	Epsilon:0.1;	Action:1;	Reward:0.1;	Q_MAX:7.049324e+04;	All_turn_scors:nan;
+time_step:4000;	state:observe;	Epsilon:0.1;	Action:1;	Reward:0.1;	Q_MAX:6.902762e+04;	All_turn_scors:nan;
+time_step:1000;	state:observe;	Epsilon:0.1;	Action:0;	Reward:0.1;	Q_MAX:6.885543e+04;	All_turn_scors:6.028571428571425;
+time_step:2000;	state:observe;	Epsilon:0.1;	Action:0;	Reward:0.1;	Q_MAX:6.135892e+04;	All_turn_scors:6.746428571428572;

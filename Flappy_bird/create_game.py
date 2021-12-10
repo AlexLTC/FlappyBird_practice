@@ -49,7 +49,7 @@ def getRandomPipe():
     # 傳回管線的座標
     return [
             {'x':pipeX, 'y':gapY - PIPE_HEIGHT}, # upper pipe
-            {'x':pipeX, 'y':gapY + PIPE_HEIGHT}, # lower pipe
+            {'x':pipeX, 'y':gapY + PIPEGAPSIZE}, # lower pipe
     ]
 
 
@@ -174,7 +174,7 @@ class GameState:
 
         # 小鳥運動
         if self.playerVelY < self.playerMaxVelY and not self.playerFlapped:
-            self.playerVelY += self.playerAcc
+            self.playerVelY += self.playerAccY
 
         if self.playerFlapped:
             self.playerFlapped = False

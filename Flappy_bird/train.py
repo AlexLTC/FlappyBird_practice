@@ -1,7 +1,7 @@
+import os
 import torch
 from torch.autograd import Variable
 import torch.nn as nn
-import torch.nn.functional as F
 import cv2
 import sys
 sys.path.append("game/")
@@ -10,56 +10,9 @@ import random
 import numpy as np
 from collections import deque
 
-from create_game.GameState import GameState
-from config.config import config
-
-cfg = config()
-
-class Net(nn.Module):
-    def __init__(self):
-        super(Net, self).__init__()
-
-        # input size = 80x80, input  channel = 4, 因為要 4 幀的連續畫面網路會比較好收斂
-        self.conv1 = nn.Conv2d(4, 32, 8, 4, padding = 2)
-        self.pool = nn.Maxpool2d(2, 2)
-        self.conv2 = nn.Conv2d(32, 64, 4, 2, padding = 1)
-        self.conv3 = nn.Conv2d(64, 64, 3, 1, padding = 1)
-
-        self.fc_sz = 1600
-        # 書上網路架構圖是 1600 -> 512 -> ACTIONS，但程式碼打 256(original:512)
-        self.fc1 = nn.Linear(self.fc_sz, 256)
-        self.fc2 = nn.Linear(256, cfg._ACTIONS_NUM)
-
-    def forward(self, x):
-        x = self.conv1(x)
-        x = F.relu(F)
-
-        x = self.pool(x)
-
-        x = self.conv2(x)
-        x  = F.relu(x)
-
-        x = self.conv3(x)
-        x = F.relu(x)
-
-        x = self.fc1(x)
-        readout = self.fc2(x)
-
-        return readout, x
-
-    def init(self):
-        self.conv1.weight.data = torch.abs(0.01 * torch.randn(self.conv1.weight.size()))
-        self.conv2.weight.data = torch.abs(0.01 * torch.randn(self.conv2.weight.size()))
-        self.conv3.weight.data = torch.abs(0.01 * torch.randn(self.conv3.weight.size()))
-        self.fc1.weight.data = torch.abs(0.01 * torch.randn(self.fc1.weight.size()))
-        self.fc2.weight.data = torch.abs(0.01 * torch.randn(self.fc2.weight.size()))
-
-        self.conv1.bias.data = torch.ones(self.conv1.bias.size()) * 0.01
-        self.conv2.bias.data = torch.ones(self.conv2.bias.size()) * 0.01
-        self.conv3.bias.data = torch.ones(self.conv3.bias.size()) * 0.01
-        self.fc1.bias.data = torch.ones(self.fc1.bias.size()) * 0.01
-        self.fc2.bias.data = torch.ones(self.fc2.bias.size()) * 0.01
-
+from create_game import GameState
+from config import cfg
+from net import Net
 
 use_cuda = torch.cuda.is_available()
 net = Net()
@@ -70,7 +23,7 @@ criterion = nn.MSELoss().cuda()
 optimizer = torch.optim.Adam(net.parameters(), lr=1e-6)
 
 # 開啟遊戲程序
-game_state =  GameState()
+gameState = GameState()
 
 # Replay Memory，類似 list 的儲存容器
 D = deque()
@@ -78,7 +31,7 @@ D = deque()
 # 將遊戲設定為初始狀態，並獲得一個 80x80 的遊戲畫面
 do_nothing = np.zeros(cfg._ACTIONS_NUM)
 do_nothing[0] = 1
-x_t, r_0, terminal = game_state.frame_step(do_nothing)
+x_t, r_0, terminal = gameState.frame_step(do_nothing)
 x_t = cv2.cvtColor(cv2.resize(x_t, (80, 80)), cv2.COLOR_BGR2GRAY)
 ret, x_t = cv2.threshold(x_t, 1, 255, cv2.THRESH_BINARY)
 
@@ -86,7 +39,8 @@ ret, x_t = cv2.threshold(x_t, 1, 255, cv2.THRESH_BINARY)
 s_t = np.stack((x_t, x_t, x_t, x_t), axis=0)
 
 # 設定初始的 epsilon，並準備 trainingepsilon = INITIAL_EPSILON
-epsilon = INITIAL_EPSILON
+epsilon = cfg._INITIAL_EPSILON
+t = 0
 
 # 設定初始的 epsilon，並準備 trainingepsilon = INITIAL_EPSILON
 # 紀錄每輪平均得分的容器
@@ -98,14 +52,14 @@ while 'flappy bird' != 'angry bird':
     # 首先，按照 greedy 選擇一個動作
     s = Variable(torch.from_numpy(s_t).type(torch.FloatTensor))
     s = s.cuda() if use_cuda else s
-    s = s.view(-1, s.size()[0], s.size([1]), s.size()[2])
+    s = s.view(-1, s.size()[0], s.size()[1], s.size()[2])
 
     # 取得目前時刻的遊戲畫面，輸入神經網路中
     readout, h_fc1 = net(s)
     
     # 神經網路產生的輸出為 readout: 選擇每一個行動產生的預期 Q 值
     readout = readout.cpu() if use_cuda else readout
-    readout_t = readout_data.numpy()[0]
+    readout_t = readout.data.numpy()[0]
 
     # 按照 epsilon greedy 產生小鳥的行動，即以 epsilon 的機率隨機行動
     # 或以 1-epsilon 的機率按照預期輸出最大的 Q 值列出動作
@@ -114,7 +68,7 @@ while 'flappy bird' != 'angry bird':
     if t % cfg._FRAME_PER_ACTION == 0:
         if random.random() <= epsilon:
             # create random action
-            print("----------------Random Action----------------")
+            # print("----------------Random Action----------------")
             action_index = random.randrange(cfg._ACTIONS_NUM)
         else:
             action_index = np.argmax(readout_t)
@@ -128,7 +82,7 @@ while 'flappy bird' != 'angry bird':
         epsilon -= (cfg._INITIAL_EPSILON - cfg._FINAL_EPSILON) / cfg._EXPLORE
 
     # 其次，將選擇好的行動輸入給遊戲引擎，並獲得下一幀狀態
-    x_t1_colored, r_t, terminal = GameState.frame_step(a_t)
+    x_t1_colored, r_t, terminal = gameState.frame_step(a_t)
 
     # record score in every step
     scores.append(r_t)
@@ -139,12 +93,12 @@ while 'flappy bird' != 'angry bird':
 
     # 對遊戲畫面進行處理，進一步變成一張 80x80 的無背景圖
     x_t1 = cv2.cvtColor(cv2.resize(x_t1_colored, (80, 80)), cv2.COLOR_BGR2GRAY)
-    ret, x_t1 = cv2.threshold(x_t1, cv2.THRESH_BINARY)
+    ret, x_t1 = cv2.threshold(x_t1, 1, 255, cv2.THRESH_BINARY)
     x_t1 = np.reshape(x_t1, (1, 80, 80))
     s_t1 = np.append(x_t1, s_t[:3, :, :], axis=0)  # (0~2, 80, 80)
 
     # 產生一個訓練資料對，並將其存入 D
-    D.append(s_t, a_t, r_t, s_t1, terminal)
+    D.append((s_t, a_t, r_t, s_t1, terminal))
     if len(D) > cfg._REPLAY_MEMORY:
         D.popleft()
 
@@ -186,9 +140,9 @@ while 'flappy bird' != 'angry bird':
         a = Variable(torch.FloatTensor(a_batch))
         s = Variable(torch.FloatTensor(np.array(s_j_batch, dtype-float)))
         if use_cuda:
-        y = y.cuda()
-        a = a.cuda()
-        s = s.cuda()
+            y = y.cuda()
+            a = a.cuda()
+            s = s.cuda()
 
         # 計算 s_j_batch 的 Q 值
         readout, h_fc1 = net(s)
@@ -206,6 +160,31 @@ while 'flappy bird' != 'angry bird':
     s_t = s_t1
     t += 1
 
+    if not os.path.exists('saving_nets'):
+        os.mkdir('saving_nets')
+
     # 每隔 10000 次循環，儲存網路
-    if t % 10000:
-        torch.save(net, 'saving_nets/' + GAME + '-dqn' + str(t), 'txt')
+    if t % 10000 == 0:
+        torch.save(net, 'saving_nets/' + cfg._GAME_NAME + '-dqn' + str(t) + '.txt')
+
+    if t <= cfg._OBSERVE:
+        state = 'observe'
+    elif t > cfg._OBSERVE and t <= cfg._OBSERVE + cfg._EXPLORE:
+        state = 'explore'
+    else:
+        state = 'train'
+
+    if t % 1000 == 0:
+        record = "time_step:{};\tstate:{};\tEpsilon:{};\tAction:{};\tReward:{};\tQ_MAX:{:e};\tAll_turn_scors:{};".format(
+                t,
+                state, 
+                epsilon,
+                action_index,
+                r_t, np.max(readout_t),
+                np.mean(all_turn_scores[-1000:])
+                )
+
+        print(record)
+        with open('log_file.txt', 'a') as f:
+            f.write(record +'\n')
+
