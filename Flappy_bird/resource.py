@@ -77,14 +77,14 @@ def load():
     # 遮色片：將影像中的主體從整個影像擷取出來的技術，方便將主體與其他物件合成到一起; 遮色騙會以 boolean 的方式儲存
     HITMASKS['pipe'] = (
             getHitmask(IMAGES['pipe'][0]),
-            getHitmask(IMAGES['pipe'][0])
+            getHitmask(IMAGES['pipe'][1])
     )
 
     # 玩家的遮色片
     HITMASKS['player'] = (
             getHitmask(IMAGES['player'][0]),
             getHitmask(IMAGES['player'][1]),
-            getHitmask(IMAGES['player'][2]),
+            getHitmask(IMAGES['player'][2])
     )
 
     return IMAGES, SOUNDS, HITMASKS

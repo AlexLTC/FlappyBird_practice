@@ -27,8 +27,8 @@ PLAYER_WIDTH = IMAGES['player'][0].get_width()
 PLAYER_HEIGHT = IMAGES['player'][0].get_height()
 
 # 設定水管的屬性：高度、寬度
-PIPE_WIDTH = IMAGES['player'][0].get_width()
-PIPE_HEIGHT = IMAGES['player'][0].get_height()
+PIPE_WIDTH = IMAGES['pipe'][0].get_width()
+PIPE_HEIGHT = IMAGES['pipe'][0].get_height()
 
 # 背景寬度設定
 BACKGROUND_WIDTH = IMAGES['background'].get_width()
@@ -49,7 +49,7 @@ def getRandomPipe():
     # 傳回管線的座標
     return [
             {'x':pipeX, 'y':gapY - PIPE_HEIGHT}, # upper pipe
-            {'x':pipeX, 'y':gapY + PIPEGAPSIZE}, # lower pipe
+            {'x':pipeX, 'y':gapY + PIPEGAPSIZE} # lower pipe
     ]
 
 
@@ -81,21 +81,21 @@ def checkCrash(player, upperPipes, lowerPipes):
         return True
     else:
         # 檢查小鳥是否與 Pipe 碰撞
-        playerRect = pygame.Rect(player['x'], player['y'], PIPE_WIDTH, PIPE_HEIGHT)  # make player's rectangle
+        playerRect = pygame.Rect(player['x'], player['y'], player['w'], player['h'])  # make player's rectangle
         for uPipe, lPipe in zip(upperPipes, lowerPipes):
             uPipeRect = pygame.Rect(uPipe['x'], uPipe['y'], PIPE_WIDTH, PIPE_HEIGHT)  # make upper Pipe's rectangle
             lPipeRect = pygame.Rect(lPipe['x'], lPipe['y'], PIPE_WIDTH, PIPE_HEIGHT)  # make lower Pipes's rectangle
         
-        # 獲得每個元素的遮色片
-        pHitMask = HITMASKS['player'][player_index]
-        uHitMask = HITMASKS['pipe'][0]
-        lHitMask = HITMASKS['pipe'][1]
+            # 獲得每個元素的遮色片
+            pHitMask = HITMASKS['player'][player_index]
+            uHitMask = HITMASKS['pipe'][0]
+            lHitMask = HITMASKS['pipe'][1]
 
-        # 檢查是否與上下管線相撞
-        uCollide = pixelCollision(playerRect, uPipeRect, pHitMask, uHitMask)
-        lCollide = pixelCollision(playerRect, lPipeRect, pHitMask, lHitMask)
-        if uCollide or lCollide:
-            return True
+            # 檢查是否與上下管線相撞
+            uCollide = pixelCollision(playerRect, uPipeRect, pHitMask, uHitMask)
+            lCollide = pixelCollision(playerRect, lPipeRect, pHitMask, lHitMask)
+            if uCollide or lCollide:
+                return True
 
     return False
 

@@ -138,7 +138,7 @@ while 'flappy bird' != 'angry bird':
         # 開始梯度更新
         y = Variable(torch.FloatTensor(y_batch))
         a = Variable(torch.FloatTensor(a_batch))
-        s = Variable(torch.FloatTensor(np.array(s_j_batch, dtype-float)))
+        s = Variable(torch.FloatTensor(np.array(s_j_batch, dtype=float)))
         if use_cuda:
             y = y.cuda()
             a = a.cuda()
@@ -180,7 +180,8 @@ while 'flappy bird' != 'angry bird':
                 state, 
                 epsilon,
                 action_index,
-                r_t, np.max(readout_t),
+                r_t, 
+                np.max(readout_t),
                 np.mean(all_turn_scores[-1000:])
                 )
 
